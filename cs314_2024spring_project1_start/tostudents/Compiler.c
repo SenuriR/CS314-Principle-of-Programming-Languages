@@ -8,7 +8,7 @@
 
             CFG for tinyL LANGUAGE
 
-    <program> ::= <stmt_list> !
+     <program> ::= <stmt_list> !
 	<stmt list> ::= <stmt> <morestmts>
 	<morestmts> ::= ; <stmt list> | ε
 	<stmt> 	::= <assign> | <read> | <print>
@@ -79,7 +79,7 @@ static int digit();
 static int digit()
 {
 	int reg;
-
+	printf("%c\n", token);
 	if (!is_digit(token)) {
 		ERROR("Expected digit\n");
 		exit(EXIT_FAILURE);
@@ -90,17 +90,17 @@ static int digit()
 	return reg;
 }
 
-static int variable() // same thing as digit
+static int variable()
 {
 	/* YOUR CODE GOES HERE */
 	int reg;
-
-	if(!is_identifier(token)){
+	printf("%c\n", token);
+	if (!is_identifier(token)) {
 		ERROR("Expected variable\n");
 		exit(EXIT_FAILURE);
 	}
 	reg = next_register();
-	CodeGen(LOADI, reg, token, EMPTY_FIELD);
+	CodeGen(LOAD, reg, token, EMPTY_FIELD);
 	next_token();
 	return reg;
 }
@@ -108,120 +108,127 @@ static int variable() // same thing as digit
 static int expr()
 {
 	int reg, left_reg, right_reg;
+	printf("%c\n", token);
 
 	switch (token) {
-		case '+': // other cases will be just like this
-			next_token();
-			left_reg = expr();
-			right_reg = expr();
-			reg = next_register();
-			CodeGen(ADD, reg, left_reg, right_reg);
-			return reg;
-			/* YOUR CODE GOES HERE */
-		case '*':
-			next_token();
-			left_reg = expr();
-			right_reg = expr();
-			reg = next_register();
-			CodeGen(MUL, reg, left_reg, right_reg);
-			return reg;
-
-		case '-':
-			next_token();
-			left_reg = expr();
-			right_reg = expr();
-			reg = next_register();
-			CodeGen(SUB, reg, left_reg, right_reg);
-			return reg;
-
-		// take care of digits
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
-			return digit();
-
-		// take care of variables
-		case 'a':
-		case 'b':
-		case 'c':
-		case 'd':
-		case 'e':
-			return variable();
-		
-		default:
-			ERROR("Unknown Symbol\n", token);
-			exit(EXIT_FAILURE);
-		}
+	case '+':
+		next_token();
+		left_reg = expr();
+		right_reg = expr();
+		reg = next_register();
+		CodeGen(ADD, reg, left_reg, right_reg);
+		return reg;
+		/* YOUR CODE GOES HERE */
+	case '-':
+		next_token(); // will be another expr()...
+		left_reg = expr();
+		right_reg = expr();
+		reg = next_register();
+		CodeGen(SUB, reg, left_reg, right_reg);
+		return reg;
+	case '*':
+		next_token(); // will be another expr()...
+		left_reg = expr();
+		right_reg = expr();
+		reg = next_register();
+		CodeGen(MUL, reg, left_reg, right_reg);
+		return reg;
+	case '&':
+		next_token(); // will be another expr()...
+		left_reg = expr();
+		right_reg = expr();
+		reg = next_register();
+		CodeGen(AND, reg, left_reg, right_reg);
+		return reg;
+	case '|':
+		next_token(); // will be another expr()...
+		left_reg = expr();
+		right_reg = expr();
+		reg = next_register();
+		CodeGen(OR, reg, left_reg, right_reg);
+		return reg;
+	case 'a':
+	case 'b':
+	case 'c':
+	case 'd':
+	case 'e':
+		return variable();
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		return digit();
+	default:
+		ERROR("Symbol %c unknown\n", token);
+		exit(EXIT_FAILURE);
+	}
 }
 
 static void assign()
 {
 	/* YOUR CODE GOES HERE */
 	char variable;
-	if(is_identifier(token)){
-		variable = token;
-		if (token == '=') {
-			next_token();
-			// assignment is the register corresponding to assignment token
+	printf("%c\n", token);
+	if (is_identifier(token)) { // token is currently the variable
+		variable = token; // save the variable
+		next_token(); // now token is the = operator
+		if (token == '='){
+			next_token(); // now token is the actual expr assignment
 			int assignment = expr();
 			CodeGen(STORE, variable, assignment, EMPTY_FIELD);
 		}
-		else {
-			ERROR("Assign error %c unknown\n", token);
-		}
+		next_token(); // set-up for <morestmts>
 	}
 }
 
 static void read()
 {
 	/* YOUR CODE GOES HERE */
-	printf("in read()\n");
-	if (token == '?'){
-		next_token();
-		CodeGen(READ, token, EMPTY_FIELD, EMPTY_FIELD);
-	}
+	// token is variable
+	printf("%c\n", token);
+	CodeGen(READ, token, EMPTY_FIELD, EMPTY_FIELD);
+	next_token(); // set-up for <morestmts>
 }
 
 static void print()
 {
 	/* YOUR CODE GOES HERE */
-	printf("in print()\n");
-	if (token == '!'){
-		next_token();
-		if (is_identifier(token) == 1){
-			CodeGen(WRITE, token, EMPTY_FIELD, EMPTY_FIELD);
-			next_token();
-		} else {
-			ERROR("Error. Current input symbol is %c\n", token);
-		}
+	printf("%c\n", token);
+	if(is_identifier(token)) {
+		CodeGen(WRITE, token, EMPTY_FIELD, EMPTY_FIELD);
+		next_token(); // set-up for <morestmts>
 	}
 }
 
 static void stmt()
 {
 	/* YOUR CODE GOES HERE */
-	printf("in stmt()\n");
-	switch(token) {
+	char stmt;
+	printf("%c\n", token);
+	stmt = token; // is the stmt token
+	switch(stmt) {
+		case '?':
+			next_token();
+			read();
+			break;
+		case '%':
+			next_token();
+			print();
+			break;
 		case 'a':
 		case 'b':
 		case 'c':
 		case 'd':
 		case 'e':
-			assign();
-			break;
-		case '?':
-			read();
+		case 'f':
 			next_token();
-			break;
-		case '!':
-			print();
+			assign();
 			break;
 	}
 }
@@ -229,16 +236,20 @@ static void stmt()
 static void morestmts()
 {
 	/* YOUR CODE GOES HERE */
-	printf("in morestmts()\n");
-	if (token == ';') {
-		next_token();
+	printf("%c\n", token);
+	char morestmts;
+	morestmts = token;
+	if (morestmts == ';') {
+		next_token(); // set-up for stmtlist
 		stmtlist();
 	}
+	// epsilon -- do nothing
 }
 
 static void stmtlist()
 {
 	/* YOUR CODE GOES HERE */
+	printf("%c\n", token);
 	stmt();
 	morestmts();
 }
@@ -247,7 +258,11 @@ static void program()
 {
 	/* YOUR CODE GOES HERE */
 	// expr();
+	printf("%c\n", token);
 	stmtlist();
+	if (token == '!') {
+		return;
+	}
 	if (token != '.') {
 		ERROR("Program error.  Current input symbol is %c\n", token);
 		exit(EXIT_FAILURE);
@@ -353,7 +368,7 @@ int main(int argc, char *argv[])
 {
 	const char *outfilename = "tinyL.out";
 	char *input;
-	FILE *infile; 
+	FILE *infile;
 
 	printf("------------------------------------------------\n");
 	printf("CS314 compiler for tinyL\n");
