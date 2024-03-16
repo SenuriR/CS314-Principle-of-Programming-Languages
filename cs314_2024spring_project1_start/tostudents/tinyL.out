@@ -1,0 +1,7 @@
+LOADI r1 #1
+STORE a r1
+LOADI r2 #1
+LOADI r3 #2
+ADD r4 r2 r3
+STORE a r4
+WRITE a

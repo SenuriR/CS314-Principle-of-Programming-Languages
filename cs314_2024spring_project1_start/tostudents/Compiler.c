@@ -79,7 +79,6 @@ static int digit();
 static int digit()
 {
 	int reg;
-	printf("%c\n", token);
 	if (!is_digit(token)) {
 		ERROR("Expected digit\n");
 		exit(EXIT_FAILURE);
@@ -94,7 +93,6 @@ static int variable()
 {
 	/* YOUR CODE GOES HERE */
 	int reg;
-	printf("%c\n", token);
 	if (!is_identifier(token)) {
 		ERROR("Expected variable\n");
 		exit(EXIT_FAILURE);
@@ -108,7 +106,6 @@ static int variable()
 static int expr()
 {
 	int reg, left_reg, right_reg;
-	printf("%c\n", token);
 
 	switch (token) {
 	case '+':
@@ -152,6 +149,7 @@ static int expr()
 	case 'c':
 	case 'd':
 	case 'e':
+	case 'f':
 		return variable();
 	case '0':
 	case '1':
@@ -174,7 +172,6 @@ static void assign()
 {
 	/* YOUR CODE GOES HERE */
 	char variable;
-	printf("%c\n", token);
 	if (is_identifier(token)) { // token is currently the variable
 		variable = token; // save the variable
 		next_token(); // now token is the = operator
@@ -183,23 +180,20 @@ static void assign()
 			int assignment = expr();
 			CodeGen(STORE, variable, assignment, EMPTY_FIELD);
 		}
-		next_token(); // set-up for <morestmts>
 	}
 }
 
 static void read()
 {
 	/* YOUR CODE GOES HERE */
-	// token is variable
-	printf("%c\n", token);
+	next_token();
 	CodeGen(READ, token, EMPTY_FIELD, EMPTY_FIELD);
-	next_token(); // set-up for <morestmts>
 }
 
 static void print()
 {
 	/* YOUR CODE GOES HERE */
-	printf("%c\n", token);
+	next_token();
 	if(is_identifier(token)) {
 		CodeGen(WRITE, token, EMPTY_FIELD, EMPTY_FIELD);
 		next_token(); // set-up for <morestmts>
@@ -210,15 +204,13 @@ static void stmt()
 {
 	/* YOUR CODE GOES HERE */
 	char stmt;
-	printf("%c\n", token);
 	stmt = token; // is the stmt token
 	switch(stmt) {
 		case '?':
-			next_token();
 			read();
+			next_token();
 			break;
 		case '%':
-			next_token();
 			print();
 			break;
 		case 'a':
@@ -227,7 +219,6 @@ static void stmt()
 		case 'd':
 		case 'e':
 		case 'f':
-			next_token();
 			assign();
 			break;
 	}
@@ -236,7 +227,6 @@ static void stmt()
 static void morestmts()
 {
 	/* YOUR CODE GOES HERE */
-	printf("%c\n", token);
 	char morestmts;
 	morestmts = token;
 	if (morestmts == ';') {
@@ -249,7 +239,6 @@ static void morestmts()
 static void stmtlist()
 {
 	/* YOUR CODE GOES HERE */
-	printf("%c\n", token);
 	stmt();
 	morestmts();
 }
@@ -258,11 +247,12 @@ static void program()
 {
 	/* YOUR CODE GOES HERE */
 	// expr();
-	printf("%c\n", token);
 	stmtlist();
 	if (token == '!') {
 		return;
 	}
+
+	// I think there is an error with this code, hopefully the if statement above avoids the error
 	if (token != '.') {
 		ERROR("Program error.  Current input symbol is %c\n", token);
 		exit(EXIT_FAILURE);
@@ -327,7 +317,7 @@ static inline int to_digit(char c)
 
 static inline int is_identifier(char c)
 {
-	if (c >= 'a' && c <= 'e')
+	if (c >= 'a' && c <= 'f') // upper bound used to be 'e', changed it to f to match our CFG
 		return 1;
 	return 0;
 }
